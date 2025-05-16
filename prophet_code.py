@@ -20,20 +20,22 @@ def fit_prophet_model(train_df: pd.DataFrame, test_df: pd.DataFrame, verbose: bo
     train_df = train_df.rename(columns={'Timestamp': 'ds', 'Frequency': 'y'})
     test_df = test_df.rename(columns={'Timestamp': 'ds', 'Frequency': 'y'})
 
-    # Initialize and fit the Prophet model
+    # Initialize and fit the Prophet model on the training data
     model = Prophet()
     model.fit(train_df)
 
-    # Generate future dataframe based on test data
-    future = test_df[['ds']].copy()
+    # Generate future dataframe for the test period
+    future = model.make_future_dataframe(periods=len(test_df), freq='D')
     forecast = model.predict(future)
 
-    # No need to filter if future is based on test_df
+    # Filter forecast to only include test dates
+    forecast_test = forecast[forecast['ds'].isin(test_df['ds'])]
 
     # Plot results
     fig1 = plt.figure(figsize=(12, 6))
     plt.plot(test_df['ds'], test_df['y'], label='Test', color='blue')
-    plt.plot(forecast['ds'], forecast['yhat'], label='Forecast', color='orange', linestyle='--')
+    plt.plot(forecast_test['ds'], forecast_test['yhat'], label='Forecast', color='orange', linestyle='--')
+    plt.fill_between(forecast_test['ds'], forecast_test['yhat_lower'], forecast_test['yhat_upper'], color='gray', alpha=0.3)
     plt.legend()
     plt.title("Prophet Forecast vs Test Data")
     plt.xlabel("Date")
