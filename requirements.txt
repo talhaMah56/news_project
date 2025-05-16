@@ -1,0 +1,15 @@
+uv
+pandas
+numpy
+matplotlib
+scikit-learn
+kagglehub
+datasets
+bertopic
+hf_transfer
+ipykernel
+notebook
+kaleido
+torch
+prophet
+tldextract
