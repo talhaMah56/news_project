@@ -26,10 +26,10 @@ def fit_prophet_model(train_df: pd.DataFrame, test_df: pd.DataFrame, verbose: bo
 
     # Generate future dataframe for the test period
     future = model.make_future_dataframe(periods=len(test_df), freq='D')
-    forecast = model.predict(future)
+    forecast_test = forecast = model.predict(future)
 
     # Filter forecast to only include test dates
-    forecast_test = forecast[forecast['ds'].isin(test_df['ds'])]
+    #forecast_test = forecast[forecast['ds'].isin(test_df['ds'])]
 
     # Plot results
     fig1 = plt.figure(figsize=(12, 6))
