@@ -33,11 +33,12 @@ def fit_prophet_model(train_df: pd.DataFrame, test_df: pd.DataFrame, verbose: bo
 
     # Plot results
     fig1 = plt.figure(figsize=(12, 6))
+    plt.plot(train_df['ds'], train_df['y'], label='Train', color='green')
     plt.plot(test_df['ds'], test_df['y'], label='Test', color='blue')
     plt.plot(forecast_test['ds'], forecast_test['yhat'], label='Forecast', color='orange', linestyle='--')
     plt.fill_between(forecast_test['ds'], forecast_test['yhat_lower'], forecast_test['yhat_upper'], color='gray', alpha=0.3)
     plt.legend()
-    plt.title("Prophet Forecast vs Test Data")
+    plt.title("Prophet Forecast vs Test Data (Train + Test)")
     plt.xlabel("Date")
     plt.ylabel("Value")
 
