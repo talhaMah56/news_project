@@ -69,6 +69,11 @@ if __name__ == "__main__":
     # Split the data
     X = grouped['date']
     y = grouped['counts']
+
+    # Save to CSV files
+    X.to_csv('x_dates.csv', index=False)
+    y.to_csv('y_counts.csv', index=False)
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
     # Create DataFrames for training and test sets
     train_df = pd.DataFrame({
@@ -79,4 +84,11 @@ if __name__ == "__main__":
         'Timestamp': X_test,
         'Frequency': y_test
     })
+
+    # Save training data to a CSV file
+    train_df.to_csv('train_dataframe.csv', index=False)
+
+    # Save testing data to another CSV file
+    test_df.to_csv('test_dataframe.csv', index=False)
+
     fit_prophet_model(train_df=train_df, test_df=test_df, verbose=args.verbose)
