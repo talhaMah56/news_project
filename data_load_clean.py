@@ -22,7 +22,7 @@ import matplotlib.dates as mdates
 import os
 from urllib.parse import urlparse
 import tldextract
-
+import numpy as np
 
 
 def describe_df(df: pd.DataFrame, verbose: bool = False) -> None:
@@ -52,13 +52,14 @@ def get_english_stopwords() -> set:
     vectorizer = CountVectorizer(stop_words="english")
     return set(vectorizer.get_stop_words())
 
+
 def extract_domain(url):
     # Handle URLs without protocols
-    url = url.lstrip('"\'').rstrip('"\'')
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
     extracted = tldextract.extract(url)
     return f"{extracted.domain}.{extracted.suffix}".lower()
+
 
 def analyze_temporal_trends(df: pd.DataFrame,
                             verbose: bool = False,
@@ -78,24 +79,37 @@ def analyze_temporal_trends(df: pd.DataFrame,
         if dataset_name == "AI_Tech":
             date_col = 'year'
             df[date_col] = df[date_col].astype(str)
+            df['month'] = df['url'].str.extract(
+                r'(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\d{2}|\d{4}-(0[1-9]|1[0-2])',
+                expand=False)
+            df['month'] = df['month'].apply(lambda x: pd.to_datetime(
+                x, format='%b').month if isinstance(x, str) and x.lower() in [
+                    'jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug',
+                    'sep', 'oct', 'nov', 'dec'
+                ] else x)
+            df['month'] = df['month'].astype('Int64')
+            np.random.seed(42)
+            # Combine year and month, use random month if not found
+            df[date_col] = df.apply(
+                lambda row: f"{row[date_col]}-{row['month']:02d}-01"
+                if pd.notna(row['month']) else
+                f"{row[date_col]}-{np.random.randint(1, 13):02d}-01",
+                axis=1)
+
         elif dataset_name == "MIT_AI":
             date_col = 'Published Date'
 
         df[date_col] = pd.to_datetime(df[date_col])
         if pd.api.types.is_datetime64_any_dtype(df[date_col]):
-            df['date'] = df[date_col].dt.to_period('Y')
-        else:
-            # Convert year string to datetime and format as 'YYYY-MM'
-            df[date_col] = pd.to_datetime(df[date_col], format='%Y')
-            df['date'] = df[date_col].dt.to_period('Y')
+            df['date'] = df[date_col].dt.to_period('M')
 
     yearly_counts = df.groupby('date').size()
-    # Ensure the index is a proper DatetimeIndex
-    if not isinstance(yearly_counts.index, pd.DatetimeIndex):
+    # Ensure the index is a proper DatetimeIndex if needed
+    if isinstance(yearly_counts.index, pd.PeriodIndex):
         yearly_counts.index = yearly_counts.index.to_timestamp()
+
     print("\nMonthly article counts:")
     print(yearly_counts)
-
 
     plt.figure(figsize=(16, 6))
     plt.rcParams.update({'font.family': 'sans-serif'})
@@ -112,7 +126,7 @@ def analyze_temporal_trends(df: pd.DataFrame,
     plt.xticks(rotation=45)
     plt.grid(True)
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
-    ax.xaxis.set_major_locator(mdates.YearLocator(base=2)) #every 2 years 
+    ax.xaxis.set_major_locator(mdates.YearLocator(base=2))  #every 2 years
     plt.tight_layout()
 
     if verbose:
@@ -122,11 +136,11 @@ def analyze_temporal_trends(df: pd.DataFrame,
         os.makedirs(images_dir, exist_ok=True)
         plt.savefig(
             os.path.join(images_dir, f'{dataset_name}_temporal_trends.png'))
-    if not(pd.api.types.is_datetime64_any_dtype(df['date'])):
-        df['date'] = df['date'].dt.to_timestamp(freq='Y')
+
+    if (pd.api.types.is_period_dtype(df['date'])):
+        df['date'] = df['date'].dt.to_timestamp(freq='M')
+        df['date'] = df['date'].dt.date
     return df['date']
-
-
 
 
 def analyze_titles(df: pd.DataFrame,
@@ -159,10 +173,8 @@ def analyze_titles(df: pd.DataFrame,
             df['text'] = df['Article Body']
 
     print(
-        f"\nAverage title length: {df['title_length'].mean():.1f} characters"
-    )
-    print(
-        f"Average word count: {df['word_count'].mean():.1f} words")
+        f"\nAverage title length: {df['title_length'].mean():.1f} characters")
+    print(f"Average word count: {df['word_count'].mean():.1f} words")
 
     stop_words = get_english_stopwords()
     words = []
@@ -213,7 +225,8 @@ def analyze_sources(df: pd.DataFrame,
             print("Source analysis not available for AI_Tech dataset.")
             return pd.Series([], dtype='object')
         elif dataset_name == "MIT_AI":
-            df['sources'] = df['Source'].map(lambda x: 'MIT CSAIL' if x == 'CSAIL' else x)
+            df['sources'] = df['Source'].map(lambda x: 'MIT CSAIL'
+                                             if x == 'CSAIL' else x)
 
     top_sources = df['sources'].value_counts().head(10)
     top_sources.index = top_sources.index.str[:15] + '...'  # Truncate long source names
@@ -237,7 +250,9 @@ def analyze_sources(df: pd.DataFrame,
     return df['sources']
 
 
-def analyze_urls(df: pd.DataFrame, dataset_name: str, verbose: bool = False) -> None:
+def analyze_urls(df: pd.DataFrame,
+                 dataset_name: str,
+                 verbose: bool = False) -> None:
     """
     Set up the 'url' column based on the dataset name and plot URL distribution.
     Args:
@@ -247,12 +262,13 @@ def analyze_urls(df: pd.DataFrame, dataset_name: str, verbose: bool = False) -> 
         df['url'] = df['Url']
 
     # Extract domain from URLs
+    df['url'] = df['url'].apply(lambda x: x.lstrip('"\'').rstrip('"\''))
     df["domain"] = df["url"].apply(lambda x: extract_domain(x))
     top_domains = df['domain'].value_counts().head(10)
 
     print("\nTop 10 sources:")
     print(top_domains)
-    
+
     plt.figure(figsize=(12, 8))
     plt.rcParams.update({'font.family': 'sans-serif'})
     top_domains.plot(kind='bar', title='Top 10 Domains')
@@ -284,7 +300,7 @@ def full_eda(df: pd.DataFrame,
 
     Returns:
         pd.DataFrame: A processed DataFrame with the following columns:
-            - date (datetime64[ns]): Date of the article.
+            - date (datetime.datetime): Date of the article.
             - temporal (int or float): Temporal trend value.
             - title (object): Title of the article.
             - title_length (int): Length of the title in characters.
@@ -299,10 +315,14 @@ def full_eda(df: pd.DataFrame,
     print('=' * 50 + '\n')
 
     describe_df(df, verbose=verbose)
-    date_series = analyze_temporal_trends(df, verbose=verbose, dataset_name=dataset_name)
     titles_df = analyze_titles(df, verbose=verbose, dataset_name=dataset_name)
-    sources_series = analyze_sources(df, verbose=verbose, dataset_name=dataset_name)
+    sources_series = analyze_sources(df,
+                                     verbose=verbose,
+                                     dataset_name=dataset_name)
     url_series = analyze_urls(df, verbose=verbose, dataset_name=dataset_name)
+    date_series = analyze_temporal_trends(df,
+                                          verbose=verbose,
+                                          dataset_name=dataset_name)
 
     processed_df = pd.DataFrame({
         'date': date_series,

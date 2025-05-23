@@ -89,13 +89,12 @@ def bertopic_model(df: pd.DataFrame,
     model_path = os.path.join(os.path.dirname(__file__), 'models')
 
     model_filename = f"{dataset_name}_bertopic_model"
-    print('''WWWWWWWW''')
     topic_model.save(
         f"{model_path}/{model_filename}",
         serialization="safetensors",
         save_ctfidf=True,
         save_embedding_model=f"sentence-transformers/{sentence_model_name}")
-    
+
 
 def model_output(df: pd.DataFrame,
                  verbose: bool = False,
@@ -122,19 +121,20 @@ def model_output(df: pd.DataFrame,
         print(topic_model.get_topic_info())
     fig = topic_model.visualize_barchart()
     if verbose:
-        fig.show()
+        fig.show(renderer="png")
     fig.write_image(os.path.join(images_dir, f"{model_filename}_barchart.png"))
     fig = topic_model.visualize_hierarchy(top_n_topics=50, orientation="left")
     if verbose:
-        fig.show()
+        fig.show(renderer="png")
     fig.write_image(os.path.join(images_dir,
                                  f"{model_filename}_hierarchy.png"))
-    topics_over_time = topic_model.topics_over_time(df["title"].to_list(), df["date"].to_list())
+    topics_over_time = topic_model.topics_over_time(df["title"].to_list(),
+                                                    df["date"].to_list())
     fig = topic_model.visualize_topics_over_time(
         topics_over_time=topics_over_time, top_n_topics=8)
     if verbose:
-        fig.show()
+        fig.show(renderer="png")
     fig.write_image(
         os.path.join(images_dir, f"{model_filename}_topics_over_time.png"))
-    
+
     return topics_over_time

@@ -5,40 +5,59 @@ import os
 from typing import Tuple
 import numpy as np
 
-def fit_prophet_model(train_df: pd.DataFrame, test_df: pd.DataFrame, verbose: bool = False) -> Tuple[Prophet, pd.DataFrame]:
+
+def fit_prophet_model(train_df: pd.DataFrame,
+                      test_df: pd.DataFrame,
+                      verbose: bool = False,
+                      image_suffix: str = "",
+                      use_exp: bool = False) -> Tuple[Prophet, pd.DataFrame]:
     """Fit a Prophet model to the time series data and plot results.
 
     Args:
         train_df: DataFrame with 'Timestamp' and 'Frequency' columns for training.
         test_df: DataFrame with 'Timestamp' and 'Frequency' columns for testing.
         verbose: If True, show plots; otherwise, save them to files.
+        image_suffix: Optional suffix for custom image filenames.
+        use_logistic: If True, use logistic growth model instead of linear.
 
     Returns:
         A tuple containing the fitted Prophet model and forecast DataFrame.
     """
     # Rename columns to match Prophet's expected format
+    train_df = train_df.copy()
+    test_df = test_df.copy()
+
     train_df = train_df.rename(columns={'Timestamp': 'ds', 'Frequency': 'y'})
     test_df = test_df.rename(columns={'Timestamp': 'ds', 'Frequency': 'y'})
+    train_df['cap'] = 10**3
+    model = Prophet(growth='logistic' if use_exp else 'linear')
 
-    # Initialize and fit the Prophet model on the training data
-    model = Prophet()
+    # Initialize and fit the Prophet model
     model.fit(train_df)
 
-    # Generate future dataframe for the test period
-    future = model.make_future_dataframe(periods=len(test_df), freq='D')
-    forecast_test = forecast = model.predict(future)
+    # Generate future dataframe based on test data
+    future = model.make_future_dataframe(periods=len(test_df), freq='M')
+    future['cap'] = 10**3
 
-    # Filter forecast to only include test dates
-    #forecast_test = forecast[forecast['ds'].isin(test_df['ds'])]
+    forecast = model.predict(future)
 
     # Plot results
     fig1 = plt.figure(figsize=(12, 6))
+
     plt.plot(train_df['ds'], train_df['y'], label='Train', color='green')
     plt.plot(test_df['ds'], test_df['y'], label='Test', color='blue')
-    plt.plot(forecast_test['ds'], forecast_test['yhat'], label='Forecast', color='orange', linestyle='--')
-    plt.fill_between(forecast_test['ds'], forecast_test['yhat_lower'], forecast_test['yhat_upper'], color='gray', alpha=0.3)
+    plt.plot(forecast['ds'],
+             forecast['yhat'],
+             label='Forecast',
+             color='orange',
+             linestyle='--')
+    plt.fill_between(forecast['ds'],
+                     forecast['yhat_lower'],
+                     forecast['yhat_upper'],
+                     color='gray',
+                     alpha=0.3)
     plt.legend()
-    plt.title("Prophet Forecast vs Test Data (Train + Test)")
+    plt.title("Prophet Forecast vs Test Data")
     plt.xlabel("Date")
     plt.ylabel("Value")
 
@@ -50,8 +69,12 @@ def fit_prophet_model(train_df: pd.DataFrame, test_df: pd.DataFrame, verbose: bo
         fig2.show()
     else:
         os.makedirs('images', exist_ok=True)
-        fig1.savefig('images/prophet_test_forecast.png')
-        fig2.savefig('images/prophet_components.png')
+        fig1.savefig(
+            f'images/prophet_forecast_{"exp" if use_exp else "lin"}_{image_suffix}.png'
+        )
+        fig2.savefig(
+            f'images/prophet_components_{"exp" if use_exp else "lin"}_{image_suffix}.png'
+        )
 
     plt.close()
     return model, forecast
