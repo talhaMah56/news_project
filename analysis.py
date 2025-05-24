@@ -63,7 +63,7 @@ if __name__ == "__main__":
              dataset_name="combined_dataset")
 
     # # Run BERTopic modeling and get topics over time
-    # bertopic_model(df=combined_df, verbose=args.verbose, dataset_name="combined_dataset")
+    bertopic_model(df=combined_df, verbose=args.verbose, dataset_name="combined_dataset")
 
     # Generate model outputs
     topics_over_time_df = model_output(df=combined_df,

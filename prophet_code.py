@@ -57,7 +57,10 @@ def fit_prophet_model(train_df: pd.DataFrame,
                      color='gray',
                      alpha=0.3)
     plt.legend()
-    plt.title("Prophet Forecast vs Test Data")
+    if (use_exp):
+        plt.title(f"Prophet Forecast Logistic vs Test Data")
+    else: 
+        plt.title(f"Prophet Forecast Linear vs Test Data")
     plt.xlabel("Date")
     plt.ylabel("Value")
 

@@ -13,3 +13,4 @@ kaleido
 torch
 prophet
 tldextract
+statsmodels

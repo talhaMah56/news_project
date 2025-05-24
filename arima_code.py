@@ -33,7 +33,8 @@ def adf_test(series: pd.Series, significance: float = 0.05) -> None:
 def plot_pacf_for_series(series: pd.Series,
                          lags: int = 20,
                          verbose: bool = False,
-                         image_suffix: str = "") -> None:
+                         image_suffix: str = "",
+                         use_exp: bool = False) -> None:
     """Plot the partial autocorrelation function (PACF) for a time series.
 
     Parameters:
@@ -45,12 +46,15 @@ def plot_pacf_for_series(series: pd.Series,
         None: The plot is either displayed or saved to 'images/arima_pacf.png'.
     """
     fig1 = plot_pacf(series.to_list(), lags=lags, alpha=0.05)
-    plt.title(f'Partial Autocorrelation Function', fontsize=14)
+    if(use_exp):
+        plt.title(f'Partial Autocorrelation Function for Exponential ARIMA', fontsize=14)
+    else:
+        plt.title(f'Partial Autocorrelation Function for Linear ARIMA', fontsize=14)
     plt.xlabel('Lag', fontsize=12)
     plt.ylabel('Partial Autocorrelation', fontsize=12)
 
     if verbose:
-        fig1.show()
+        plt.show()
     else:
         os.makedirs('images', exist_ok=True)
         fig1.savefig(f'images/arima_pacf_{image_suffix}.png')
@@ -118,11 +122,17 @@ def fit_arima_model(train_df: pd.DataFrame,
         forecast_df.iloc[:, 1],  # upper bound
         color='gray',
         alpha=0.3)
+    if(use_exp):
+        plt.title(f'ARIMA Forecast Exponential vs Test Data')
+    else:
+        plt.title(f'ARIMA Forecast Linear vs Test Data')
+    plt.xlabel('Date', fontsize=12)
+    plt.ylabel('Frequency', fontsize=12)
     plt.legend()
 
     # Display or save the plot
     if verbose:
-        fig1.show()
+        plt.show()
     else:
         os.makedirs('images', exist_ok=True)
         fig1.savefig(f'images/arima_forecast_{image_suffix}.png')
@@ -181,7 +191,7 @@ def run_arima_analysis(train_df: pd.DataFrame,
 
     plot_pacf_for_series(train_df['Frequency'],
                          verbose=verbose,
-                         image_suffix=suffix)
+                         image_suffix=suffix, use_exp=use_exp)
 
     model, forecast = fit_arima_model(train_df,
                                       test_df,
