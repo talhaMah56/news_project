@@ -1,0 +1,13 @@
+ARIMA Model Results (Exponential (Log-transformed))
+Order: (2, 1, 2)
+Image suffix: articles_exp
+
+Training Metrics:
+  R² Score: 0.9517
+  L2 (MSE): 58.9939
+  Chi²:     683.4714
+
+Testing Metrics:
+  R² Score: -1.3084
+  L2 (MSE): 8022.1324
+  Chi²:     3323.5912

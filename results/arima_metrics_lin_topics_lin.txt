@@ -1,0 +1,13 @@
+ARIMA Model Results (Linear)
+Order: (2, 1, 2)
+Image suffix: topics_lin
+
+Training Metrics:
+  R² Score: 0.9551
+  L2 (MSE): 11.5562
+  Chi²:     10000000274.2305
+
+Testing Metrics:
+  R² Score: -0.7239
+  L2 (MSE): 498.1939
+  Chi²:     412.3328

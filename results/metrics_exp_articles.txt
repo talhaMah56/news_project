@@ -1,0 +1,12 @@
+Prophet Model Results (Exponential (Logistic))
+Image suffix: articles
+
+Training Metrics:
+  R² Score: 0.9468
+  L2 (MSE): 76.9978
+  Chi²:     4284.3090
+
+Testing Metrics:
+  R² Score: -2.0836
+  L2 (MSE): 10716.0699
+  Chi²:     1820.2523

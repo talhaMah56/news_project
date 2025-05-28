@@ -96,45 +96,116 @@ def bertopic_model(df: pd.DataFrame,
         save_embedding_model=f"sentence-transformers/{sentence_model_name}")
 
 
+import glob
+
+
 def model_output(df: pd.DataFrame,
                  verbose: bool = False,
-                 dataset_name: str = "dataset") -> None:
-    """Generate and save visualizations from the BERTopic model.
+                 dataset_name: str = "dataset") -> pd.DataFrame:
+    """Generate and save visualizations from the BERTopic model and export topic-over-time values to a new .txt file.
 
     Parameters:
     df (pd.DataFrame): The input DataFrame containing the dataset.
     verbose (bool): If True, enable verbose output.
     dataset_name (str): The name of the dataset.
-    random_number (int): A random number for model and image filenames.
 
     Returns:
-    None
+    pd.DataFrame: The topics_over_time DataFrame.
     """
     model_path = os.path.join(os.path.dirname(__file__), 'models')
     images_dir = os.path.join(os.path.dirname(__file__), 'images')
+    logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
     os.makedirs(model_path, exist_ok=True)
     os.makedirs(images_dir, exist_ok=True)
+    os.makedirs(logs_dir, exist_ok=True)
 
     model_filename = f"{dataset_name}_bertopic_model"
     topic_model = BERTopic.load(f"{model_path}/{model_filename}")
+
     if verbose:
         print(topic_model.get_topic_info())
+
+    # Visualize bar chart
     fig = topic_model.visualize_barchart()
     if verbose:
         fig.show(renderer="png")
     fig.write_image(os.path.join(images_dir, f"{model_filename}_barchart.png"))
+
+    # Visualize hierarchy
     fig = topic_model.visualize_hierarchy(top_n_topics=50, orientation="left")
     if verbose:
         fig.show(renderer="png")
-    fig.write_image(os.path.join(images_dir,
-                                 f"{model_filename}_hierarchy.png"))
-    topics_over_time = topic_model.topics_over_time(df["title"].to_list(),
-                                                    df["date"].to_list())
-    fig = topic_model.visualize_topics_over_time(
-        topics_over_time=topics_over_time, top_n_topics=8)
+    fig.write_image(os.path.join(images_dir, f"{model_filename}_hierarchy.png"))
+
+    # Generate topics over time
+    titles = df["title"].to_list()
+    dates = df["date"].to_list()
+    topics_over_time = topic_model.topics_over_time(titles, dates)
+
+    # Visualize topics over time
+    fig = topic_model.visualize_topics_over_time(topics_over_time=topics_over_time, top_n_topics=8)
     if verbose:
         fig.show(renderer="png")
-    fig.write_image(
-        os.path.join(images_dir, f"{model_filename}_topics_over_time.png"))
+    fig.write_image(os.path.join(images_dir, f"{model_filename}_topics_over_time.png"))
+
+    # Prepare to save to a new .txt file if file exists and is non-empty
+    base_log_path = os.path.join(logs_dir, f"{dataset_name}_topics_over_time_log.txt")
+    log_path = base_log_path
+
+    if os.path.exists(log_path) and os.path.getsize(log_path) > 0:
+        existing_logs = glob.glob(os.path.join(logs_dir, f"{dataset_name}_topics_over_time_log_*.txt"))
+        log_path = os.path.join(logs_dir, f"{dataset_name}_topics_over_time_log_{len(existing_logs) + 1}.txt")
+
+    # Save X (Timestamp), Topic, Frequency
+    with open(log_path, "w", encoding="utf-8") as f:
+        f.write("#" * 16 + "3\n")
+        for _, row in topics_over_time.iterrows():
+            f.write(f"{row['Timestamp']}, {row['Topic']}, {row['Frequency']}\n")
+
+    if verbose:
+        print(f"\nTopics over time values saved to: {log_path}")
 
     return topics_over_time
+
+# def model_output(df: pd.DataFrame,
+#                  verbose: bool = False,
+#                  dataset_name: str = "dataset") -> None:
+#     """Generate and save visualizations from the BERTopic model.
+#
+#     Parameters:
+#     df (pd.DataFrame): The input DataFrame containing the dataset.
+#     verbose (bool): If True, enable verbose output.
+#     dataset_name (str): The name of the dataset.
+#     random_number (int): A random number for model and image filenames.
+#
+#     Returns:
+#     None
+#     """
+#     model_path = os.path.join(os.path.dirname(__file__), 'models')
+#     images_dir = os.path.join(os.path.dirname(__file__), 'images')
+#     os.makedirs(model_path, exist_ok=True)
+#     os.makedirs(images_dir, exist_ok=True)
+#
+#     model_filename = f"{dataset_name}_bertopic_model"
+#     topic_model = BERTopic.load(f"{model_path}/{model_filename}")
+#     if verbose:
+#         print(topic_model.get_topic_info())
+#     fig = topic_model.visualize_barchart()
+#     if verbose:
+#         fig.show(renderer="png")
+#     fig.write_image(os.path.join(images_dir, f"{model_filename}_barchart.png"))
+#     fig = topic_model.visualize_hierarchy(top_n_topics=50, orientation="left")
+#     if verbose:
+#         fig.show(renderer="png")
+#     fig.write_image(os.path.join(images_dir,
+#                                  f"{model_filename}_hierarchy.png"))
+#     topics_over_time = topic_model.topics_over_time(df["title"].to_list(),
+#                                                     df["date"].to_list())
+#     fig = topic_model.visualize_topics_over_time(
+#         topics_over_time=topics_over_time, top_n_topics=8)
+#     if verbose:
+#         fig.show(renderer="png")
+#     fig.write_image(
+#         os.path.join(images_dir, f"{model_filename}_topics_over_time.png"))
+#
+#     return topics_over_time

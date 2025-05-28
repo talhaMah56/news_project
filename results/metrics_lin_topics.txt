@@ -1,0 +1,12 @@
+Prophet Model Results (Linear)
+Image suffix: topics
+
+Training Metrics:
+  R² Score: 0.9633
+  L2 (MSE): 11.1419
+  Chi²:     601.8356
+
+Testing Metrics:
+  R² Score: 0.4927
+  L2 (MSE): 146.6043
+  Chi²:     104.5937
